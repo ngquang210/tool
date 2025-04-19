@@ -1,0 +1,100 @@
+import re
+import sys
+import hashlib # Mặc dù không dùng để tạo hash, nhưng có thể hữu ích nếu cần mở rộng
+
+def validate_md5(md5_hash):
+    """Kiểm tra xem chuỗi đầu vào có phải là mã MD5 hợp lệ không."""
+    if not isinstance(md5_hash, str):
+        return False, "Đầu vào phải là một chuỗi."
+    # Xóa khoảng trắng thừa
+    md5_hash = md5_hash.strip()
+    # Kiểm tra độ dài và ký tự hex
+    if len(md5_hash) != 32:
+        return False, f"Mã MD5 phải có đúng 32 ký tự (đã nhập {len(md5_hash)} ký tự)."
+    if not re.fullmatch(r'[0-9a-fA-F]{32}', md5_hash):
+        return False, "Mã MD5 chứa ký tự không hợp lệ (chỉ cho phép 0-9, a-f, A-F)."
+    return True, md5_hash # Trả về mã đã được trim nếu hợp lệ
+
+def predict_tx_from_md5_rule(md5_hash):
+    """
+    Dự đoán Tài/Xỉu dựa trên một quy tắc giả định từ ký tự cuối của MD5.
+    QUAN TRỌNG: Quy tắc này không có cơ sở toán học hoặc thống kê thực tế
+                 để dự đoán kết quả Tài Xỉu thực tế.
+    """
+    last_char = md5_hash[-1].lower() # Lấy ký tự cuối và chuyển thành chữ thường
+
+    try:
+        # Chuyển ký tự hex cuối cùng thành giá trị số nguyên (0-15)
+        last_digit_value = int(last_char, 16)
+
+        # --- Quy tắc giả định ---
+        # Ví dụ: Chia đôi không gian hex (0-7 là Xỉu, 8-f là Tài)
+        # Bạn có thể thay đổi quy tắc này nếu muốn, nhưng nó vẫn là giả định.
+        if last_digit_value <= 7:  # Các giá trị 0, 1, 2, 3, 4, 5, 6, 7 (8 khả năng)
+            prediction = "Xỉu"
+            # Xác suất dựa trên quy tắc này (8/16 khả năng)
+            probability = 50.0
+        else:  # Các giá trị 8, 9, a, b, c, d, e, f (8 khả năng)
+            prediction = "Tài"
+            # Xác suất dựa trên quy tắc này (8/16 khả năng)
+            probability = 50.0
+        # ------------------------
+
+        return {"prediction": prediction, "probability": probability}
+
+    except ValueError:
+        # Trường hợp không thể chuyển đổi ký tự cuối (dù đã validate, để phòng hờ)
+        return {"prediction": "Lỗi", "probability": 0.0}
+
+def display_results(result):
+    """Hiển thị kết quả dự đoán."""
+    print("-" * 35)
+    if result['prediction'] == "Lỗi":
+        print(" (!) Đã xảy ra lỗi trong quá trình xử lý.")
+    else:
+        print(f" vkhanhh v2 Dự đoán:")
+        print(f"  -> Kết quả (giả định): {result['prediction']}")
+        print(f"  -> Xác suất (theo quy tắc): {result['probability']:.1f}%")
+    print("-" * 35)
+
+def run_vkhanhh_v2():
+    """Chạy giao diện chính của tool."""
+    print("=" * 40)
+    print("   Chào mừng đến với Tool Tài Xỉu MD5")
+    print("              vkhanhh v2")
+    print("=" * 40)
+    print("\n*** CẢNH BÁO QUAN TRỌNG ***")
+    print("Tool này dự đoán dựa trên MỘT QUY TẮC GIẢ ĐỊNH từ mã MD5.")
+    print("Kết quả và xác suất KHÔNG CÓ CƠ SỞ THỰC TẾ và KHÔNG ĐẢM BẢO")
+    print("độ chính xác trong trò chơi Tài Xỉu thực tế.")
+    print("MD5 không thể dự đoán các sự kiện ngẫu nhiên.")
+    print("Hãy chơi có trách nhiệm. KHÔNG dùng tool này để cờ bạc.")
+    print("-" * 40)
+
+    while True:
+        md5_input = input("Nhập mã MD5 (32 ký tự) hoặc gõ 'exit' để thoát:\n> ").strip()
+
+        if md5_input.lower() == 'exit':
+            print("\nCảm ơn đã sử dụng vkhanhh v2. Tạm biệt!")
+            sys.exit()
+
+        is_valid, validation_result = validate_md5(md5_input)
+
+        if not is_valid:
+            print(f"\n (!) Lỗi đầu vào: {validation_result}\n")
+            continue
+
+        # Mã MD5 hợp lệ, thực hiện dự đoán dựa trên quy tắc
+        md5_hash = validation_result # Lấy mã MD5 đã được trim
+        prediction_result = predict_tx_from_md5_rule(md5_hash)
+
+        # Hiển thị kết quả
+        display_results(prediction_result)
+
+        print("\nNhập mã MD5 khác hoặc 'exit' để thoát.")
+        print("-" * 40)
+
+
+# Chạy chương trình chính
+if __name__ == "__main__":
+    run_vkhanhh_v2()
